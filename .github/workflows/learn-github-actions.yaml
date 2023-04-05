@@ -1,13 +1,33 @@
 name: learn-github-actions
 run-name: ${{github.actor}} is learning GitHub Actions
-on: [push]
+on:
+  push:
+    tags:
+      - "v*.*.*"
 jobs:
   check-bats-version:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: 'test'
       - uses: actions/setup-node@v3
         with:
           node-version: '14'
-      - run: npm install -g bats
-      - run: bats -v
+      - name: Bats version
+        shell: bash
+        run: |
+          npm install -g bats
+          bats -v
+      - name: Package
+        shell: bash
+        run: |
+          tar czvf readme-$GITHUB_REF_NAME.tar.gz readme.md
+          cd -
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: 'readme-*'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
